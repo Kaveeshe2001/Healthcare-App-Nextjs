@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { Form, FormControl } from "@/components/ui/form";
-import { createUser } from "@/lib/actions/patient.actions";
+import { createUser, registerPatient } from "@/lib/actions/patient.actions";
 
 import "react-phone-number-input/style.css";
 import CustomFormField, { FormFieldType } from "../CustomFormField";
@@ -29,14 +29,42 @@ const RegisterForm = ({user}: { user: User }) => {
     resolver: zodResolver(PatientFormValidation),
     defaultValues: {
       ...PatientFormDefaultValues,
-      name: "",
-      email: "",
-      phone: "",
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof UserFormValidation>) => {
+  const onSubmit = async (values: z.infer<typeof PatientFormValidation>) => {
     setIsLoading(true);
+
+    let formData;
+
+    if(values.identificationDocument && values.identificationDocument.length > 0) {
+        const blobFile = new Blob([values.identificationDocument[0]], {
+            type: values.identificationDocument[0].type,
+        }) //blob is a special type of browser can read
+
+        formData = new FormData();
+        formData.append('blobFile', blobFile);
+        formData.append('fileName', values.identificationDocument[0].name);
+    }
+
+    try {
+        const patientData = {
+            ...values,
+            userId: user.$id,
+            birthDate: new Date(values.birthDate),
+            identificationDocument: formData,
+        }
+
+        // @ts-ignore
+        const patient = await registerPatient(patientData);
+
+        if(patient) router.push(`/patient/${user.$id}/new-appointment`)
+    } catch (error) {
+        console.log(error);
+    }
 
     try {
       const user = {
