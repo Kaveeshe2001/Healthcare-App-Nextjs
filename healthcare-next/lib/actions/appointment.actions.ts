@@ -15,9 +15,10 @@ export const createAppointment = async (appointment: CreateAppointmentParams) =>
         appointment
       );
 
+      revalidatePath("/admin");
       return parseStringify(newAppointment);
     } catch(error) {
-        console.log(error);
+      console.error("An error occurred while creating a new appointment:", error);
     }
 }
 
@@ -32,7 +33,10 @@ export const getAppointment = async ( appointmentId: string ) => {
 
       return parseStringify(appointment);
     } catch(error) {
-        console.log(error);
+      console.error(
+        "An error occurred while retrieving the existing patient:",
+        error
+      );
     }
 }
 
@@ -52,12 +56,16 @@ export const getRecentAppointmentList = async () => {
     }
 
     const counts = (appointments.documents as Appointment[]).reduce((acc, appointment) => {
-      if (appointment.status === 'scheduled') {
-        acc.scheduledCount += 1;
-      } else if (appointment.status === 'pending') {
-        acc.pendingCount += 1;
-      } else if (appointment.status === 'cancelled') {
-        acc.cancelledCount += 1;
+      switch (appointment.status) {
+        case "scheduled":
+          acc.scheduledCount++;
+          break;
+        case "pending":
+          acc.pendingCount++;
+          break;
+        case "cancelled":
+          acc.cancelledCount++;
+          break;
       }
 
       return acc;
@@ -72,7 +80,10 @@ export const getRecentAppointmentList = async () => {
     return parseStringify(data);
 
   } catch(error) {
-    console.log(error);
+    console.error(
+      "An error occurred while retrieving the recent appointments:",
+      error
+    );
   }
 }
 
@@ -95,8 +106,8 @@ export const updateAppointment = async ({ appointmentId, userId, appointment, ty
 
     revalidatePath('/admin');
     return parseStringify(updatedAppointment);
-    
+
   } catch(error) {
-    console.log(error);
+    console.error("An error occurred while scheduling an appointment:", error);
   }
 }
