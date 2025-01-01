@@ -15,15 +15,18 @@ import { getAppointmentSchema } from "@/lib/validation";
 import { Doctors } from "@/constants";
 import { SelectItem } from "../ui/select";
 import Image from "next/image";
-import { createAppointment } from "@/lib/actions/appointment.actions";
+import { createAppointment, updateAppointment } from "@/lib/actions/appointment.actions";
+import { Appointment } from "@/types/appwrite.types";
 
 type AppointmentProps = {
     userId: string;
     patientId: string;
     type: "create" | "cancel" | "schedule";
+    appointment?: Appointment;
+    setOpen: (open: boolean) => void;
 }
 
-export const AppointmentForm = ({ userId, patientId, type }: AppointmentProps ) => {
+export const AppointmentForm = ({ userId, patientId, type, appointment, setOpen }: AppointmentProps ) => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -68,13 +71,31 @@ export const AppointmentForm = ({ userId, patientId, type }: AppointmentProps ) 
                reason: values.reason!,
                status: status as Status,
                note: values.note,
-            }    
-            
+            }
             const appointment = await createAppointment(appointmentData);
 
             if(appointment) {
                 form.reset();
                 router.push(`/patients/${userId}/new-appointment/success?appointmentId=${appointment.$id}`);
+            }
+        } else {
+            const appointmentToUpdate = {
+                userId,
+                appointmentId: appointment?.$id!,
+                appointment: {
+                    primaryPhysician: values?.primaryPhysician,
+                    schedule: new Date(values?.schedule),
+                    status: status as Status,
+                    cancellationReason: values?.cancellationReason,
+                },
+                type
+            }
+
+            const updatedAppointment = await updateAppointment(appointmentToUpdate);
+
+            if(updatedAppointment) {
+                setOpen && setOpen(false);
+                form.reset();
             }
         }
         
